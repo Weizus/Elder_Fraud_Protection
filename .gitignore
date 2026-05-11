@@ -1,4 +1,22 @@
+# Ignore node modules, coverage reports, and system files
 node_modules/
 coverage/
 .DS_Store
 *.log
+backend/balanced_spam.csv
+
+#Python
+*__pycache__/
+
+#Environment Variables
+*.env 
+*.venv/
+
+# Postman YAML exports
+.postman/
+
+# Common Postman folders
+postman/environments/
+postman/globals/
+postman/resources/
+.resources/

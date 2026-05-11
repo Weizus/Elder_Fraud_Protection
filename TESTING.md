@@ -33,6 +33,7 @@ This generates a coverage summary in the terminal and a detailed HTML report in 
 ```bash
 npx jest tests/content.test.js
 npx jest tests/manifest.test.js
+npx jest tests/mongo.test.js
 ```
 
 ## Test Structure

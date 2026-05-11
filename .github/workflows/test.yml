@@ -1,19 +1,16 @@
 name: Run Tests
-
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
-
+    branches: [main, master]
+  workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-
     steps:
       - uses: actions/checkout@v4
 
@@ -25,5 +22,94 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests
-        run: npm test
+      - name: Set up python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Start Flask App in Background
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: |
+          # nohup keeps the process running; > directs our logs (Good for debugging) 
+          nohup python -u backend/run.py > flask_log.txt 2>&1 &
+
+      - name: Wait for Flask to start and Verify
+        run: |
+          sleep 5 
+          curl -v http://127.0.0.1:8000/api/status || (echo "FLASK CRASHED:" && cat flask_log.txt && exit 1)
+
+      - name: Run unit and integration tests with coverage
+        env:
+          # Ensure we're using the right version, http vs https lol
+          FLASK_URL: http://127.0.0.1:8000
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-node-${{ matrix.node-version }}
+          path: coverage/
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Install Xvfb
+        run: sudo apt-get install -y xvfb
+
+      - name: Set up python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Check if dataset exists
+        id: check_dataset
+        run: |
+          if [ -f "backend/balanced_spam.csv" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Dataset not found, skipping E2E test"
+          fi
+
+      - name: Start Flask App in Background
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: |
+          # nohup keeps the process running; > directs our logs (Good for debugging) 
+          nohup python backend/run.py > flask_log.txt 2>&1 &
+
+      - name: Wait for Flask to start and Verify
+        run: |
+          sleep 5 
+          curl -v http://127.0.0.1:8000/api/status || (echo "FLASK CRASHED:" && cat flask_log.txt && exit 1)
+
+      - name: Run E2E tests with virtual display (With Flask Server)
+        env:
+          # Ensure we're using the right version, http vs https lol
+          FLASK_URL: http://127.0.0.1:8000
+        run: xvfb-run npm run test:e2e
+
+      - name: Skip E2E tests
+        run: echo "Skipping E2E tests - dataset not available in CI environment"
+
+      - name: Upload Flask Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flask-logs
+          path: flask_log.txt

@@ -1,0 +1,18 @@
+$kind: http-request
+name: Get All Data
+method: GET
+url: '{{baseUrl}}/all_data'
+description: 'Fetch up to 10 documents from the MongoDB test collection.'
+order: 1000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Response is an array", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData).to.be.an("array");
+      });

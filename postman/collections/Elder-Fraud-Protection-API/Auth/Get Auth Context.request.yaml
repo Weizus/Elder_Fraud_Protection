@@ -1,0 +1,23 @@
+$kind: http-request
+name: Get Auth Context
+method: GET
+url: '{{baseUrl}}/auth/context'
+description: 'Returns the current authentication context — whether the request is authenticated, the user info, and any auth errors. Pass a Clerk JWT Bearer token in the Authorization header to test authenticated state.'
+order: 1000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{clerkToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Response has is_authenticated field", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData).to.have.property("is_authenticated");
+      });

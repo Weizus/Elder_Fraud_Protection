@@ -4,10 +4,15 @@
   "description": "Chrome extension to protect elderly users from online fraud",
   "scripts": {
     "test": "jest --verbose",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test tests/e2e.test.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.3.0"
+  },
+  "dependencies": {
+    "@clerk/clerk-react": "^5.61.5"
   }
 }

@@ -1,0 +1,18 @@
+$kind: http-request
+name: Get Status
+method: GET
+url: '{{baseUrl}}/status'
+description: 'Check if the server and MongoDB database are online.'
+order: 1000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Response body has status field", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData).to.have.property("status");
+      });

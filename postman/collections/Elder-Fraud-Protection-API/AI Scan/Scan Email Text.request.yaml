@@ -1,0 +1,28 @@
+$kind: http-request
+name: Scan Email Text
+method: POST
+url: '{{baseUrl}}/scan'
+description: 'Submit email text to the AI model for fraud/phishing/spam classification. Returns a prediction label (legitimate, phishing, or spam), confidence score, and metadata.'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "text": "Congratulations! You have won a $1,000 gift card. Click here to claim your prize now!"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Response has pred_label and pred_score fields", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData).to.have.property("pred_label");
+          pm.expect(jsonData).to.have.property("pred_score");
+      });
